@@ -159,6 +159,64 @@ API接口需记录调用日志，确保可追踪性。
 
 ---
 
+## 消息格式
+
+```
+{
+  "message_id": "string",           // 消息的唯一标识符（UUID格式）
+  "timestamp": "string",            // 消息发送的时间戳（ISO 8601格式，如2025-01-02T10:00:00Z）
+  "source": {                       // 消息来源信息
+    "type": "string",               // 来源类型（如 "api", "plugin", 或 "ai"）
+    "name": "string",               // 来源名称（如 "QQBot", "CentralAI"）
+    "version": "string"             // 来源版本号（如 "1.0.0"）
+  },
+  "target": {                       // 消息目标信息
+    "type": "string",               // 目标类型（如 "plugin", "api", 或 "ai"）
+    "name": "string"                // 目标名称（如 "ServerManagerPlugin"）
+  },
+  "content": {                      // 消息内容
+    "type": "string",               // 消息类型（如 "raw_message", "command", "response", "error"）
+    "data": {                       // 消息数据，根据类型不同格式有所变化
+      "raw_message": {              // 原始消息，仅适用于 type = "raw_message"
+        "message_text": "string",   // 用户的原文消息
+        "sender": {                 // 发送者信息
+          "user_id": "string",      // 发送者的用户ID
+          "nickname": "string"      // 发送者昵称
+        },
+        "context": {                // 上下文信息
+          "chat_id": "string",      // 聊天群ID或私聊ID
+          "message_type": "string"  // 消息类型（如 "group", "private"）
+        }
+      },
+      "command": {                  // 指令消息，仅适用于 type = "command"
+        "command": "string",        // 指令名称
+        "params": {                 // 指令参数（键值对形式）
+          "key": "value"
+        }
+      },
+      "response": {                 // 响应消息，仅适用于 type = "response"
+        "status": "string",         // 执行状态（如 "success", "failure"）
+        "result": "string"          // 执行结果或返回值
+      },
+      "error": {                    // 错误消息，仅适用于 type = "error"
+        "code": "string",           // 错误码
+        "message": "string"         // 错误描述
+      }
+    }
+  },
+  "context": {                      // 消息的上下文信息
+    "session_id": "string",         // 会话ID，用于标识同一交互的上下文
+    "parent_message_id": "string",  // 父级消息ID（如果有，标识消息链路）
+    "trace": [                      // 消息流转路径（按顺序记录每一步）
+      {
+        "timestamp": "string",      // 时间戳
+        "handler": "string"         // 处理节点名称（如 "CentralAI", "ServerManagerPlugin"）
+      }
+    ]
+  }
+}
+```
+
 ## 项目管理建议
 
 ### 1. 模块化开发
