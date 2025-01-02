@@ -150,14 +150,6 @@ API接口需记录调用日志，确保可追踪性。
 
 ---
 
-## 示例流程
-
-### 用户操作示例
-
-待更新
-
-
----
 
 ## 消息格式
 
@@ -216,6 +208,249 @@ API接口需记录调用日志，确保可追踪性。
   }
 }
 ```
+
+
+---
+
+## 示例流程
+
+具体消息示例：查询服务器在线玩家并踢出玩家abc
+
+以下是完整的消息交互流程：
+
+
+### 1. QQ管理员向机器人发送消息
+
+管理员消息内容：
+
+> 查询服务器在线玩家数量，并把叫abc的玩家踢出服务器。
+
+机器人转发消息到中心AI：
+
+```
+{
+  "message_id": "123e4567-e89b-12d3-a456-426614174000",
+  "timestamp": "2025-01-02T10:00:00Z",
+  "source": {
+    "type": "api",
+    "name": "QQBot",
+    "version": "1.0.0"
+  },
+  "target": {
+    "type": "ai",
+    "name": "CentralAI"
+  },
+  "content": {
+    "type": "raw_message",
+    "data": {
+      "message_text": "查询服务器在线玩家数量，并把叫abc的玩家踢出服务器。",
+      "sender": {
+        "user_id": "admin_001",
+        "nickname": "管理员"
+      },
+      "context": {
+        "chat_id": "group_12345", // QQ群ID
+        "message_type": "group"   // 消息类型（私聊或群聊）
+      }
+    }
+  },
+  "context": {
+    "session_id": "abc123",
+    "parent_message_id": null
+  }
+}
+```
+
+### 2. 中心AI解析消息并生成指令
+
+中心AI解析自然语言后，将其拆分为两条指令：
+
+1. 查询服务器在线玩家数量。
+
+2. 踢出名为abc的玩家。
+
+
+中心AI生成的第一条指令：查询在线玩家
+
+```
+{
+  "message_id": "123e4567-e89b-12d3-a456-426614174001",
+  "timestamp": "2025-01-02T10:00:01Z",
+  "source": {
+    "type": "ai",
+    "name": "CentralAI",
+    "version": "2.0.0"
+  },
+  "target": {
+    "type": "plugin",
+    "name": "ServerManagerPlugin"
+  },
+  "content": {
+    "type": "command",
+    "data": {
+      "command": "get_online_players",
+      "params": {
+        "server_id": "mc_001"
+      }
+    }
+  },
+  "context": {
+    "session_id": "abc123",
+    "parent_message_id": "123e4567-e89b-12d3-a456-426614174000"
+  }
+}
+```
+
+中心AI生成的第二条指令：踢出玩家abc
+
+```
+{
+  "message_id": "123e4567-e89b-12d3-a456-426614174002",
+  "timestamp": "2025-01-02T10:00:02Z",
+  "source": {
+    "type": "ai",
+    "name": "CentralAI",
+    "version": "2.0.0"
+  },
+  "target": {
+    "type": "plugin",
+    "name": "ServerManagerPlugin"
+  },
+  "content": {
+    "type": "command",
+    "data": {
+      "command": "kick_player",
+      "params": {
+        "server_id": "mc_001",
+        "player_name": "abc"
+      }
+    }
+  },
+  "context": {
+    "session_id": "abc123",
+    "parent_message_id": "123e4567-e89b-12d3-a456-426614174000"
+  }
+}
+```
+
+### 3. 聊天插件执行指令并返回结果
+
+第一条指令的返回结果（在线玩家数量）：
+
+```
+{
+  "message_id": "123e4567-e89b-12d3-a456-426614174003",
+  "timestamp": "2025-01-02T10:00:03Z",
+  "source": {
+    "type": "plugin",
+    "name": "ServerManagerPlugin",
+    "version": "1.0.0"
+  },
+  "target": {
+    "type": "ai",
+    "name": "CentralAI"
+  },
+  "content": {
+    "type": "response",
+    "data": {
+      "response": {
+        "status": "success",
+        "result": {
+          "online_players": ["abc", "player2", "player3"]
+        }
+      }
+    }
+  },
+  "context": {
+    "session_id": "abc123",
+    "parent_message_id": "123e4567-e89b-12d3-a456-426614174001"
+  }
+}
+```
+
+第二条指令的返回结果（踢出玩家abc）：
+
+```
+{
+  "message_id": "123e4567-e89b-12d3-a456-426614174004",
+  "timestamp": "2025-01-02T10:00:04Z",
+  "source": {
+    "type": "plugin",
+    "name": "ServerManagerPlugin",
+    "version": "1.0.0"
+  },
+  "target": {
+    "type": "ai",
+    "name": "CentralAI"
+  },
+  "content": {
+    "type": "response",
+    "data": {
+      "response": {
+        "status": "success",
+        "result": "Player abc has been kicked."
+      }
+    }
+  },
+  "context": {
+    "session_id": "abc123",
+    "parent_message_id": "123e4567-e89b-12d3-a456-426614174002"
+  }
+}
+```
+
+### 4. 中心AI整合结果并返回机器人
+
+中心AI整合两条结果后，发送给QQ机器人：
+
+```
+{
+  "message_id": "123e4567-e89b-12d3-a456-426614174005",
+  "timestamp": "2025-01-02T10:00:05Z",
+  "source": {
+    "type": "ai",
+    "name": "CentralAI",
+    "version": "2.0.0"
+  },
+  "target": {
+    "type": "api",
+    "name": "QQBot"
+  },
+  "content": {
+    "type": "response",
+    "data": {
+      "response": {
+        "status": "success",
+        "result": "当前在线玩家数量为3：abc, player2, player3。\n玩家abc已被踢出服务器。"
+      }
+    }
+  },
+  "context": {
+    "session_id": "abc123",
+    "parent_message_id": "123e4567-e89b-12d3-a456-426614174000"
+  }
+}
+```
+
+### 5. QQ机器人向管理员反馈
+
+反馈内容：
+
+> 当前在线玩家数量为3：abc, player2, player3。
+玩家abc已被踢出服务器。
+
+---
+
+原文转发：机器人直接将管理员的原文消息传递至中心AI。
+
+自然语言处理：中心AI解析消息内容并拆分为两条指令。
+
+指令执行与反馈：中心AI协调插件完成任务，并将整合结果返回给机器人。
+
+这种流程确保了逻辑清晰、扩展性强，并能智能处理复杂指令。
+
+
+---
 
 ## 项目管理建议
 
