@@ -153,6 +153,137 @@ API接口需记录调用日志，确保可追踪性。
 
 ## 消息格式
 
+以下是 **聊天插件** 和 **API插件** 的注册数据格式，设计目标是确保插件能够清晰地向中心AI声明其功能、指令处理能力和转发规则。  
+
+### **1. 聊天插件注册格式**  
+```
+{
+  "plugin_id": "string",                  // 聊天插件的唯一标识符
+  "plugin_name": "string",                // 聊天插件名称
+  "version": "string",                    // 聊天插件版本号
+  "supported_commands": [                 // 聊天插件支持的指令列表
+    {
+      "command": "string",                // 指令名称
+      "description": "string",            // 指令功能描述
+      "requires_processing": "boolean"    // 是否需要中心AI预处理（true/false）
+    }
+  ],
+  "default_handling_policy": {            // 默认处理策略（当消息未匹配任何注册指令时）
+    "forward_to_central_ai": "boolean",   // 未匹配时是否转发至中心AI
+    "handle_by_self": "boolean"           // 未匹配时是否直接由插件处理
+  }
+}
+```
+
+#### **字段说明**  
+| 字段名                  | 类型       | 描述                                                                                     |  
+|-------------------------|------------|------------------------------------------------------------------------------------------|  
+| `plugin_id`             | `string`   | 聊天插件的唯一标识符，用于标识该插件（例如UUID）。                                        |  
+| `plugin_name`           | `string`   | 聊天插件名称，例如 "QQBot" 或 "TelegramBot"。                                             |  
+| `version`               | `string`   | 聊天插件版本号，用于版本管理。                                                           |  
+| `supported_commands`    | `array`    | 聊天插件支持的指令及其描述。                                                             |  
+| `command`               | `string`   | 指令名称，例如 "query_player" 或 "kick_player"。                                          |  
+| `description`           | `string`   | 指令的功能简述，例如 "查询在线玩家" 或 "踢出指定玩家"。                                    |  
+| `requires_processing`   | `boolean`  | 指令是否需要由中心AI预处理，`true` 表示需要经过自然语言解析等处理。                        |  
+| `default_handling_policy` | `object` | 当消息未匹配注册指令时的处理方式，是否转发给中心AI或由插件自行处理。                      |  
+
+---
+
+### **2. API插件注册格式**  
+```
+{
+  "api_id": "string",                     // API插件的唯一标识符
+  "api_name": "string",                   // API插件名称
+  "version": "string",                    // API插件版本号
+  "supported_endpoints": [                // API插件支持的接口列表
+    {
+      "endpoint": "string",               // API接口名称
+      "description": "string",            // 接口功能描述
+      "params_schema": {                  // 接口的参数结构定义
+        "param_name": "param_type"        // 参数名称和类型（如 "player_name": "string"）
+      }
+    }
+  ],
+  "default_policy": {                     // 默认处理策略
+    "allow_direct_access": "boolean",     // 是否允许聊天插件直接调用API（通常为false，必须由中心AI转发）
+    "require_auth": "boolean"             // 是否需要认证（如访问令牌）才能调用该API
+  }
+}
+```
+
+#### **字段说明**  
+| 字段名                  | 类型       | 描述                                                                                     |  
+|-------------------------|------------|------------------------------------------------------------------------------------------|  
+| `api_id`                | `string`   | API插件的唯一标识符，用于标识该插件（例如UUID）。                                         |  
+| `api_name`              | `string`   | API插件名称，例如 "ServerManager" 或 "GameDataAPI"。                                     |  
+| `version`               | `string`   | API插件版本号，用于版本管理。                                                            |  
+| `supported_endpoints`   | `array`    | API插件支持的接口及其描述。                                                              |  
+| `endpoint`              | `string`   | API接口名称，例如 "get_online_players" 或 "ban_player"。                                 |  
+| `description`           | `string`   | 接口功能描述，例如 "获取在线玩家列表" 或 "封禁玩家"。                                     |  
+| `params_schema`         | `object`   | API接口参数结构定义，列出参数名称及其类型（如 "string", "integer", "boolean"）。          |  
+| `default_policy`        | `object`   | 默认处理策略，规定是否允许直接调用API及是否需要认证。                                    |  
+
+---
+
+### **注册示例**  
+
+#### **聊天插件注册示例**  
+```json
+{
+  "plugin_id": "plugin_qqbot_001",
+  "plugin_name": "QQBot",
+  "version": "1.0.0",
+  "supported_commands": [
+    {
+      "command": "query_player",
+      "description": "查询在线玩家",
+      "requires_processing": true
+    },
+    {
+      "command": "kick_player",
+      "description": "踢出指定玩家",
+      "requires_processing": true
+    }
+  ],
+  "default_handling_policy": {
+    "forward_to_central_ai": true,
+    "handle_by_self": false
+  }
+}
+```
+
+#### **API插件注册示例**  
+```json
+{
+  "api_id": "api_server_manager_001",
+  "api_name": "ServerManagerPlugin",
+  "version": "1.0.0",
+  "supported_endpoints": [
+    {
+      "endpoint": "get_online_players",
+      "description": "获取在线玩家列表",
+      "params_schema": {}
+    },
+    {
+      "endpoint": "kick_player",
+      "description": "踢出指定玩家",
+      "params_schema": {
+        "player_name": "string"
+      }
+    }
+  ],
+  "default_policy": {
+    "allow_direct_access": false,
+    "require_auth": true
+  }
+}
+```
+
+
+---
+
+### **3. 通信格式**  
+
 ```
 {
   "message_id": "string",           // 消息的唯一标识符（UUID格式）
@@ -227,7 +358,7 @@ API接口需记录调用日志，确保可追踪性。
 
 机器人转发消息到中心AI：
 
-```
+```json
 {
   "message_id": "123e4567-e89b-12d3-a456-426614174000",
   "timestamp": "2025-01-02T10:00:00Z",
@@ -272,7 +403,7 @@ API接口需记录调用日志，确保可追踪性。
 
 中心AI生成的第一条指令：查询在线玩家
 
-```
+```json
 {
   "message_id": "123e4567-e89b-12d3-a456-426614174001",
   "timestamp": "2025-01-02T10:00:01Z",
@@ -303,7 +434,7 @@ API接口需记录调用日志，确保可追踪性。
 
 中心AI生成的第二条指令：踢出玩家abc
 
-```
+```json
 {
   "message_id": "123e4567-e89b-12d3-a456-426614174002",
   "timestamp": "2025-01-02T10:00:02Z",
@@ -337,7 +468,7 @@ API接口需记录调用日志，确保可追踪性。
 
 第一条指令的返回结果（在线玩家数量）：
 
-```
+```json
 {
   "message_id": "123e4567-e89b-12d3-a456-426614174003",
   "timestamp": "2025-01-02T10:00:03Z",
@@ -370,7 +501,7 @@ API接口需记录调用日志，确保可追踪性。
 
 第二条指令的返回结果（踢出玩家abc）：
 
-```
+```json
 {
   "message_id": "123e4567-e89b-12d3-a456-426614174004",
   "timestamp": "2025-01-02T10:00:04Z",
@@ -403,7 +534,7 @@ API接口需记录调用日志，确保可追踪性。
 
 中心AI整合两条结果后，发送给QQ机器人：
 
-```
+```json
 {
   "message_id": "123e4567-e89b-12d3-a456-426614174005",
   "timestamp": "2025-01-02T10:00:05Z",
